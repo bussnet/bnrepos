@@ -1,0 +1,31 @@
+bnrepo-test-local:
+  type: local
+  dir: /tmp/bnrepo-test
+  create: true
+
+bnrepo-test-s3:
+  type: s3
+  aws_key: AWS_KEY
+  aws_secret: AWS_SECRET
+  bucket: bnrepo-test
+  dir: bnrepo-test
+  create: true
+  use_old_version: false
+  options:
+    default_acl: public-read #DEFAULT is only BucketOwner can read, so everyone with the link can read
+
+bnrepo-test-ftp:
+  type: ftp
+  host: HOST
+  username: USERNAME
+  password: PASSWORD
+  dir: /bnrepo-test
+  passive: false
+
+bnrepo-test-sftp:
+  type: sftp
+  host: HOST
+  port: PORT
+  dir: /bnrepo-test
+  username: USERNAME
+  password: PASSWORD
