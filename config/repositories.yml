@@ -1,4 +1,4 @@
-bnrepo-test-local-DISABLED:
+bnrepo-test-local:
   type: local
   dir: /tmp/bnrepo-test
   create: true
