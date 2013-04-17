@@ -1,71 +1,18 @@
 {
-    "hash": "a6943105d3bbe07d4dc69d0f070abe15",
+    "hash": "27e0806eaae1ded7bdfb8ef47f1f3872",
     "packages": [
         {
-            "name": "amazonwebservices/aws-sdk-for-php",
-            "version": "1.6.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/amazonwebservices/aws-sdk-for-php.git",
-                "reference": "1.6.2"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/amazonwebservices/aws-sdk-for-php/zipball/1.6.2",
-                "reference": "1.6.2",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.2.0"
-            },
-            "suggest": {
-                "aws/aws-sdk-php": "You should consider upgrading to version 2 of the AWS SDK for PHP"
-            },
-            "type": "library",
-            "autoload": {
-                "classmap": [
-                    "authentication/",
-                    "extensions/",
-                    "lib/",
-                    "services/",
-                    "utilities/",
-                    "sdk.class.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "Apache-2.0"
-            ],
-            "authors": [
-                {
-                    "name": "Amazon Web Services",
-                    "homepage": "http://aws.amazon.com"
-                }
-            ],
-            "description": "AWS SDK for PHP",
-            "homepage": "http://aws.amazon.com/sdkforphp/",
-            "keywords": [
-                "amazon",
-                "aws",
-                "dynamodb",
-                "ec2",
-                "s3",
-                "sdk"
-            ],
-            "time": "2013-03-15 19:43:06"
-        },
-        {
             "name": "aws/aws-sdk-php",
-            "version": "2.2.0",
+            "version": "2.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "2.2.0"
+                "reference": "2.2.1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/2.2.0",
-                "reference": "2.2.0",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/2.2.1",
+                "reference": "2.2.1",
                 "shasum": ""
             },
             "require": {
@@ -75,6 +22,7 @@
             "require-dev": {
                 "doctrine/common": "2.3.*",
                 "ext-apc": "*",
+                "ext-openssl": "*",
                 "monolog/monolog": "1.4.*",
                 "phpunit/phpunit": "3.7.*",
                 "symfony/class-loader": "2.*",
@@ -83,6 +31,7 @@
             "suggest": {
                 "doctrine/cache": "Adds support for caching of credentials and responses",
                 "ext-apc": "Allows service description opcode caching, request and response caching, and credentials caching",
+                "ext-openssl": "Allows working with CloudFront private distributions and verifying received SNS messages",
                 "monolog/monolog": "Adds support for logging HTTP requests and responses",
                 "symfony/yaml": "Eases the ability to write manifests for creating jobs in AWS Import/Export"
             },
@@ -117,7 +66,7 @@
                 "s3",
                 "sdk"
             ],
-            "time": "2013-03-11 17:17:11"
+            "time": "2013-03-18 23:23:45"
         },
         {
             "name": "guzzle/guzzle",
@@ -388,17 +337,17 @@
         },
         {
             "name": "symfony/yaml",
-            "version": "v2.2.0",
+            "version": "v2.2.1",
             "target-dir": "Symfony/Component/Yaml",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/Yaml.git",
-                "reference": "v2.2.0-RC3"
+                "reference": "v2.2.1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/Yaml/zipball/v2.2.0-RC3",
-                "reference": "v2.2.0-RC3",
+                "url": "https://api.github.com/repos/symfony/Yaml/zipball/v2.2.1",
+                "reference": "v2.2.1",
                 "shasum": ""
             },
             "require": {
@@ -431,7 +380,7 @@
             ],
             "description": "Symfony Yaml Component",
             "homepage": "http://symfony.com",
-            "time": "2013-01-27 16:49:19"
+            "time": "2013-03-23 07:49:54"
         }
     ],
     "packages-dev": [
