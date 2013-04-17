@@ -1,9 +1,4 @@
 <?php
-/**
- * User: thorsten
- * Date: 15.04.13
- * Time: 13:19
- */
 
 namespace BNRepo\Repository\Adapter;
 
@@ -19,10 +14,10 @@ interface AdapterDownloadable {
 	 * @param string $sourceKey
 	 * @param string $localTargetFile
 	 *
-	 * @return boolean                  TRUE if the rename was successful
+	 * @return boolean                  TRUE if the download was successful
 	 * @throws FileNotFound   when sourceKey does not exist
 	 * @throws UnexpectedFile when targetKey exists
-	 * @throws \RuntimeException        when cannot rename
+	 * @throws \RuntimeException        when cannot download
 	 */
 	public function download($sourceKey, $localTargetFile);
 

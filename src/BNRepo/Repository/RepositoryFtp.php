@@ -1,9 +1,4 @@
 <?php
-/**
- * User: thorsten
- * Date: 15.04.13
- * Time: 11:25
- */
 
 namespace BNRepo\Repository;
 

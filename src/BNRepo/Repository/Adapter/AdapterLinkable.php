@@ -1,9 +1,4 @@
 <?php
-/**
- * User: thorsten
- * Date: 15.04.13
- * Time: 13:19
- */
 
 namespace BNRepo\Repository\Adapter;
 

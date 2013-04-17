@@ -1,15 +1,15 @@
 <?php
-/**
- * User: thorsten
- * Date: 13.04.13
- * Time: 12:29
- */
 
 namespace BNRepo\Repository;
 
 use Symfony\Component\Yaml\Yaml;
 use Symfony\Component\Yaml\Exception\ParseException;
 
+/**
+ * Class RepositoryManager
+ * Manage Repositories in a lazy way
+ * @package BNRepo\Repository
+ */
 class RepositoryManager {
 
 	static $config = array();
@@ -107,6 +107,13 @@ class RepositoryManager {
 		self::$repositories = array();
 	}
 
+	/**
+	 * Gets the Linker, which can work over all repositories
+	 * @return RepositoryLinker
+	 */
+	public static function getLinker() {
+		return RepositoryLinker::getInstance();
+	}
 }
 
 class InvalidResourceException extends \Exception {}

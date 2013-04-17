@@ -1,9 +1,4 @@
 <?php
-/**
- * User: thorsten
- * Date: 15.04.13
- * Time: 11:24
- */
 
 namespace BNRepo\Repository;
 
@@ -15,6 +10,11 @@ use Gaufrette\Filesystem;
 use BNRepo\Repository\Adapter\AdapterDownloadable;
 use BNRepo\Repository\Adapter\AdapterUploadable;
 
+/**
+ * Class Repository
+ * BaseClass for the different Repositories
+ * @package BNRepo\Repository
+ */
 class Repository extends Filesystem {
 
 	public function __construct($cfg) {

@@ -18,10 +18,10 @@ interface AdapterUploadable {
 	 * @param string $localFile
 	 * @param string $targetKey
 	 *
-	 * @return boolean                  TRUE if the rename was successful
+	 * @return boolean                  TRUE if the upload was successful
 	 * @throws FileNotFound   when sourceKey does not exist
 	 * @throws UnexpectedFile when targetKey exists
-	 * @throws \RuntimeException        when cannot rename
+	 * @throws \RuntimeException        when cannot upload
 	 */
 	public function upload($localFile, $targetKey);
 }

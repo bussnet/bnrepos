@@ -34,6 +34,8 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
     public function __construct($name = NULL, array $data = array(), $dataName = '') {
 	    parent::__construct($name, $data, $dataName);
 	    $yml_file = __DIR__ . '/../../../../config/repositories.yml';
+	    if (isset($_ENV['repositories']))
+		    $yml_file = $_ENV['repositories'];
 	    RepositoryManager::importRepositoriesFromYamlFile($yml_file);
         $this->cfg = Yaml::parse($yml_file);
     }
@@ -61,6 +63,7 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 
     protected function tearDown() {
         shell_exec('rm -fr ' . self::DIR);
+	    $this->_tearDown($this->repo());
         parent::tearDown();
     }
 

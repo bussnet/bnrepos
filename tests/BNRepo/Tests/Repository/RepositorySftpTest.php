@@ -1,9 +1,4 @@
 <?php
-/**
- * User: thorsten
- * Date: 15.04.13
- * Time: 12:22
- */
 
 namespace BNRepo\Tests\Repository;
 
@@ -13,11 +8,6 @@ use BNRepo\Repository\RepositoryManager;
 class RepositorySftpTest extends RepositoryTest {
 
 	protected $cfg_id = 'bnrepo-test-sftp';
-
-	protected function tearDown() {
-        parent::tearDown();
-        $this->_tearDown($this->repo());
-    }
 
     public function testUploadFileSuccessfully() {
         $this->_testUploadFileSuccessfully($this->repo());

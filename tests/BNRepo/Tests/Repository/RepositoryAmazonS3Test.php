@@ -1,9 +1,4 @@
 <?php
-/**
- * User: thorsten
- * Date: 15.04.13
- * Time: 12:22
- */
 
 namespace BNRepo\Tests\Repository;
 
@@ -19,7 +14,6 @@ class RepositoryAmazonS3Test extends RepositoryTest {
         parent::tearDown();
 	    if ($this->repo()->has('public.txt'))
 	        $this->repo()->delete('public.txt');
-	    $this->_tearDown($this->repo());
     }
 
     public function testUploadFileSuccessfully() {
