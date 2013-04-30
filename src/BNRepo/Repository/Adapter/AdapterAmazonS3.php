@@ -7,8 +7,20 @@ use Gaufrette\Adapter\AmazonS3;
 use Gaufrette\Exception\FileNotFound;
 use Gaufrette\Exception\UnexpectedFile;
 
-class AdapterAmazonS3 extends AmazonS3 implements AdapterUploadable, AdapterDownloadable, AdapterLinkable {
-    public function __construct(\AmazonS3 $service, $bucket, $options = array()) {
+/**
+ * Class AdapterAmazonS3
+ * @package BNRepo\Repository\Adapter
+ * @deprecated
+ */
+class AdapterAmazonS3 extends AmazonS3 implements Adapter {
+
+	/**
+	 * @var \AmazonS3
+	 */
+	protected $service;
+
+	public function __construct(\AmazonS3 $service, $bucket, $options = array()) {
+		throw new \RuntimeException('Adapter AWS-S3 SDKver1 not longer supported');
         if (isset($options['directory'])) { // strip double slashes and secure that the dir not start and ends with an slash
             $options['directory'] = substr(preg_replace('~/+~', '/', '/'. $options['directory'].'/'), 1, -1);
         }
@@ -17,8 +29,29 @@ class AdapterAmazonS3 extends AmazonS3 implements AdapterUploadable, AdapterDown
         parent::__construct($service, $bucket, $options);
     }
 
+	/**
+	 * Returns the created time
+	 *
+	 * @param string $key
+	 *
+	 * @return integer|boolean An UNIX like timestamp or false
+	 */
+	public function ctime($key) {
+		throw new \RuntimeException('Adapter does not support ctime function.');
+	}
 
     /**
+	 * Returns the last accessed time
+	 *
+	 * @param string $key
+	 *
+	 * @return integer|boolean An UNIX like timestamp or false
+	 */
+	public function atime($key) {
+		throw new \RuntimeException('Adapter does not support atime function.');
+	}
+
+	/**
 	 * Uploads a Local file
 	 *
 	 * @param string $localFile
@@ -29,7 +62,7 @@ class AdapterAmazonS3 extends AmazonS3 implements AdapterUploadable, AdapterDown
 	 * @throws UnexpectedFile when targetKey exists
 	 * @throws \RuntimeException        when cannot rename
 	 */
-	public function upload($localFile, $targetKey) {
+	public function push($localFile, $targetKey) {
 		return $this->write($targetKey, file_get_contents($localFile));
 	}
 
@@ -45,7 +78,7 @@ class AdapterAmazonS3 extends AmazonS3 implements AdapterUploadable, AdapterDown
 	 * @throws UnexpectedFile when targetKey exists
 	 * @throws \RuntimeException        when cannot rename
 	 */
-	public function download($sourceKey, $localTargetFile) {
+	public function pull($sourceKey, $localTargetFile) {
 		return file_put_contents($localTargetFile, $this->read($sourceKey));
 	}
 
@@ -139,8 +172,10 @@ class AdapterAmazonS3 extends AmazonS3 implements AdapterUploadable, AdapterDown
     /**
      * Add Directory-Prefix and remove fullPath and emptyDirLine from output for similar response to local/ftp etc
      * {@inheritDoc}
+     * @deprecated
      */
-    public function keys() {
+    public function keys($prefix=null, $withDirectories=false) {
+	    //@todo: implement $prefix and $withDirectories
         $this->ensureBucketExists();
 
         $list = $this->service->get_object_list($this->bucket, array(
@@ -199,5 +234,37 @@ class AdapterAmazonS3 extends AmazonS3 implements AdapterUploadable, AdapterDown
 			$this->computePath($key)
 		);
 	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function getKeyIterator($prefix = null) {
+		throw new \RuntimeException('function getKeyIterator not support by this adapter');
+	}
+
+
+	/**
+	 * Returns the MimeType of the given Key
+	 * @param $key
+	 * @return mixed
+	 */
+	public function getContentType($key) {
+		// @todo implement
+		throw new \RuntimeException('function getContentType not support by this adapter');
+	}
+
+	/**
+	 * Appends the given content on the file
+	 *
+	 * @param string $key
+	 * @param string $content
+	 *
+	 * @return integer|boolean The number of bytes that were written into the file
+	 */
+	public function append($key, $content) {
+		// TODO: Implement append() method.
+		throw new \RuntimeException('function getContentType not support by this adapter');
+	}
+
 
 }

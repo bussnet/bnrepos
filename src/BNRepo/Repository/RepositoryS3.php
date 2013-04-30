@@ -6,9 +6,8 @@ namespace BNRepo\Repository;
 use Aws\S3\S3Client;
 use BNRepo\Repository\Adapter\AdapterAmazonS3;
 use BNRepo\Repository\Adapter\AdapterAmazonS3Ver2;
-use BNRepo\Repository\Adapter\AdapterLinkable;
 
-class RepositoryS3 extends Repository implements AdapterLinkable {
+class RepositoryS3 extends Repository {
 
 	protected function createAdapter($cfg) {
 		if (!isset($cfg['aws_key']) || empty($cfg['aws_key']))
@@ -51,21 +50,4 @@ class RepositoryS3 extends Repository implements AdapterLinkable {
 		}
 	}
 
-
-    /**
-     * Downloads a file to Local
-     *
-     * @param string $key
-     * @param int $validTime
-     * @param array $options
-     *
-     * @return string Generated URL
-     * @throws \Gaufrette\Exception\FileNotFound   when key does not exist
-     * @throws \RuntimeException        Url cannot generated
-     */
-    public function getUrl($key, $validTime = 0, $options = array()) {
-        $this->assertHasFile($key);
-
-        return $this->adapter->getUrl($key, $validTime, $options);
-    }
 }

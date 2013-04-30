@@ -251,7 +251,7 @@ class RepositoryLinkerTest extends RepositoryTest {
 		$this->repo2()->write($key, $this->test_content);
 
 		$localFile = self::DIR.'localFile.txt';
-		$this->assertTrue(RepositoryLinker::getInstance()->download($uri, $localFile), 'download file');
+		$this->assertTrue(RepositoryLinker::getInstance()->pull($uri, $localFile), 'download file');
 		$this->assertEquals($this->test_content, file_get_contents($localFile), 'content matches');
 	}
 
@@ -266,8 +266,23 @@ class RepositoryLinkerTest extends RepositoryTest {
 		$localFile = self::DIR . 'localFile.txt';
 		file_put_contents($localFile, $this->test_content);
 
-		$this->assertTrue(RepositoryLinker::getInstance()->upload($localFile, $uri), 'file upload');
+		$this->assertTrue(RepositoryLinker::getInstance()->push($localFile, $uri), 'file upload');
 		$this->assertTrue(RepositoryLinker::getInstance()->has($uri), 'file exists');
+	}
+
+
+	/**
+	 * @covers BNRepo\Repository\RepositoryLinker::getUrl
+	 */
+	public function testGetUrl() {
+		$this->markTestIncomplete('to implement');
+	}
+
+	/**
+	 * @covers BNRepo\Repository\RepositoryLinker::downloadFile
+	 */
+	public function testDownloadFile() {
+		$this->markTestIncomplete('to implement');
 	}
 
 }

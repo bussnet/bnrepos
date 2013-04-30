@@ -41,11 +41,15 @@ class RepositorySftpTest extends RepositoryTest {
         $this->_testDownloadFileSourceFileNotExistsException($this->repo());
     }
 
-    public function testCorrectFileStruture() {
-        $this->_testCorrectFileStruture($this->repo());
+    public function testCorrectFileStructure() {
+        $this->_testCorrectFileStructure($this->repo());
     }
 
-    public function testDeleteFileSuccessfully() {
+	public function testCorrectFileStructureWithDirectories() {
+		$this->_testCorrectFileStructureWithDirectories($this->repo());
+	}
+
+	public function testDeleteFileSuccessfully() {
         $this->_testDeleteFileSuccessfully($this->repo());
     }
 
@@ -60,5 +64,17 @@ class RepositorySftpTest extends RepositoryTest {
     public function testIsDirectory() {
         $this->_testIsDirectory($this->repo());
     }
+
+	public function testGetContentType() {
+		$this->_testGetContentType($this->repo());
+	}
+
+	public function testGetUrl() {
+		$this->_testGetUrl($this->repo());
+	}
+
+	public function testAppending() {
+		$this->_testAppending($this->repo());
+	}
 
 }

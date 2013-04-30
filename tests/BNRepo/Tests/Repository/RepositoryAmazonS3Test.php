@@ -48,11 +48,15 @@ class RepositoryAmazonS3Test extends RepositoryTest {
         $this->_testDownloadFileSourceFileNotExistsException($this->repo());
     }
 
-    public function testCorrectFileStruture() {
-        $this->_testCorrectFileStruture($this->repo());
+    public function testCorrectFileStructure() {
+        $this->_testCorrectFileStructure($this->repo());
     }
 
-    public function testDeleteFileSuccessfully() {
+	public function testCorrectFileStructureWithDirectories() {
+		$this->_testCorrectFileStructureWithDirectories($this->repo());
+	}
+
+	public function testDeleteFileSuccessfully() {
         $this->_testDeleteFileSuccessfully($this->repo());
     }
 
@@ -68,7 +72,19 @@ class RepositoryAmazonS3Test extends RepositoryTest {
         $this->_testIsDirectory($this->repo());
     }
 
-    public function testGetPublicUrl() {
+	public function testGetContentType() {
+		$this->_testGetContentType($this->repo());
+	}
+
+	public function testAppending() {
+		$this->_testAppending($this->repo());
+	}
+
+	public function testGetUrl() {
+		$this->_testGetUrl($this->repo());
+	}
+
+	public function testGetPublicUrl() {
 	    /** @var $repo RepositoryS3 */
         $repo = $this->repo();
         $repo->write('public.txt', $this->test_content, true);

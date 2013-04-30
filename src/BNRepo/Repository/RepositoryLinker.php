@@ -3,11 +3,8 @@
 namespace BNRepo\Repository;
 
 
-use BNRepo\Repository\Adapter\AdapterDownloadable;
-use BNRepo\Repository\Adapter\AdapterUploadable;
 use Gaufrette\Exception\FileNotFound;
 use Gaufrette\Exception\UnexpectedFile;
-use Gaufrette\File;
 use Gaufrette\Stream;
 
 /**
@@ -45,6 +42,23 @@ class RepositoryLinker {
 	    return static::$instance;
 	}
 
+	/**
+	 * @param string $scheme
+	 * @return $this
+	 */
+	public function setScheme($scheme) {
+		$this->scheme = $scheme;
+		return $this;
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getScheme() {
+		return $this->scheme;
+	}
+
+
 //	/**
 //   * Parse the URI and returns an Obj with Repo, RepoID und Dir
 //   * Alternative concept to getRepositoryFromUri() with $uri as ReferenceParam
@@ -67,13 +81,12 @@ class RepositoryLinker {
 //	}
 
 	/**
-	 * return Repo, parsed from repoUlr (bnrepo://REPO_ID/path/to/file.ext)
-	 * ATTENION: $uri would change to the real Path - the scheme and host was striped from the uri
+	 * Parse the URI and split into parts
 	 * @param $uri
-	 * @return Repository
+	 * @return mixed
 	 * @throws NoValidLinkerScheme
 	 */
-	protected function getRepositoryFromUri(&$uri) {
+	protected function parseUri($uri) {
 		// Validate and Cache Uri
 		if (!isset($this->uri_cache[$uri])) {
 			$c = parse_url($uri);
@@ -81,12 +94,69 @@ class RepositoryLinker {
 				throw new NoValidLinkerScheme('linker scheme is missed');
 			if ($c['scheme'] != $this->scheme)
 				throw new NoValidLinkerScheme(sprintf('%s is not a valid linker scheme - need %s', $c['scheme'], $this->scheme));
-			$this->uri_cache[$uri] = $c;
+			$this->uri_cache[$uri] = array(
+				'repo' => $c['host'],
+				'path' => $c['path'],
+				'file' => basename($c['path']),
+				'dir' => dirname($c['path']),
+			);
 		}
-		$c = &$this->uri_cache[$uri];
+		return $this->uri_cache[$uri];
+	}
+
+	/**
+	 * return Repo, parsed from repoUlr (bnrepo://REPO_ID/path/to/file.ext)
+	 * ATTENION: $uri would change to the real Path - the scheme and host was striped from the uri
+	 * @param $uri
+	 * @return Repository
+	 * @throws NoValidLinkerScheme
+	 */
+	protected function getRepositoryFromUri(&$uri) {
+		$c = $this->parseUri($uri);
 		// change $uri to the path, so the var could use to work with the repo
 		$uri = $c['path'];
-		return RepositoryManager::getRepository($c['host']);
+		return RepositoryManager::getRepository($c['repo']);
+	}
+
+	/**
+	 * @param $uri
+	 * @return mixed
+	 */
+	protected function getPathFromUri($uri) {
+		$c = $this->parseUri($uri);
+		return $c['path'];
+	}
+
+
+	/**
+	 * Check if 2URIs have the same Repo
+	 * @param $uri1
+	 * @param $uri2
+	 * @return bool
+	 */
+	protected function urisHaveSameRepository($uri1, $uri2) {
+		$u1 = $this->parseUri($uri1);
+		$u2 = $this->parseUri($uri2);
+		return $u1['repo'] == $u2['repo'];
+	}
+
+	/**
+	 * Check if 2URIs are equal
+	 * @param $uri1
+	 * @param $uri2
+	 * @return bool
+	 */
+	protected function urisAreEqual($uri1, $uri2) {
+		return $this->urisHaveSameRepository($uri1, $uri2) && $this->getPathFromUri($uri1) == $this->getPathFromUri($uri2);
+	}
+
+	/**
+	 * Check an URI if is Valid
+	 * @param $uri
+	 * @return string
+	 */
+	public function isValidUri($uri) {
+		return strtolower(substr($uri, 0, strlen($this->scheme . '://'))) == $this->scheme . '://';
 	}
 
 	/**
@@ -160,10 +230,12 @@ class RepositoryLinker {
 	/**
 	 * Returns an array of all keys
 	 *
+	 * @param $uri
+	 * @param bool $withDirectories
 	 * @return array
 	 */
-	public function keys($uri) {
-		return $this->getRepositoryFromUri($uri)->keys();
+	public function keys($uri, $withDirectories=false) {
+		return $this->getRepositoryFromUri($uri)->keys($uri, $withDirectories);
 	}
 
 	/**
@@ -173,11 +245,11 @@ class RepositoryLinker {
 	 * if adapter implements ListKeysAware interface, adapter's implementation will be used,
 	 * in not, ALL keys will be requested and iterated through.
 	 *
-	 * @param  string $prefix
+	 * @param  string $uri
 	 * @return array
 	 */
-	public function listKeys($uri, $prefix = '') {
-		return $this->getRepositoryFromUri($uri)->listKeys($prefix);
+	public function listKeys($uri) {
+		return $this->getRepositoryFromUri($uri)->listKeys($uri);
 	}
 
 	/**
@@ -262,8 +334,8 @@ class RepositoryLinker {
 	 * @throws UnexpectedFile when targetKey exists
 	 * @throws \RuntimeException        when cannot upload
 	 */
-	public function upload($localFile, $targetKey, $overwriteRemoteFile = false) {
-		return $this->getRepositoryFromUri($targetKey)->upload($localFile, $targetKey, $overwriteRemoteFile);
+	public function push($localFile, $targetKey, $overwriteRemoteFile = false) {
+		return $this->getRepositoryFromUri($targetKey)->push($localFile, $targetKey, $overwriteRemoteFile);
 	}
 
 	/**
@@ -278,8 +350,66 @@ class RepositoryLinker {
 	 * @throws UnexpectedFile when targetKey exists
 	 * @throws \RuntimeException        when cannot download
 	 */
-	public function download($sourceKey, $localTargetFile, $overwriteLocalFile = false) {
-		return $this->getRepositoryFromUri($sourceKey)->download($sourceKey, $localTargetFile, $overwriteLocalFile);
+	public function pull($sourceKey, $localTargetFile, $overwriteLocalFile = false) {
+		return $this->getRepositoryFromUri($sourceKey)->pull($sourceKey, $localTargetFile, $overwriteLocalFile);
+	}
+
+	/**
+	 * Renames a file
+	 *
+	 * @param string $sourceKey
+	 * @param string $targetKey
+	 *
+	 * @return boolean                  TRUE if the rename was successful
+	 * @throws FileNotFound   when sourceKey does not exist
+	 * @throws UnexpectedFile when targetKey exists
+	 * @throws \RuntimeException        when cannot rename
+	 */
+	public function rename($sourceKey, $targetKey) {
+		if (!$this->urisHaveSameRepository($sourceKey, $targetKey))
+			return $this->move($sourceKey, $targetKey);
+		return $this->getRepositoryFromUri($sourceKey)->rename($sourceKey, $this->getPathFromUri($targetKey));
+	}
+
+	/**
+	 * Generates a URL to the File to Download/View
+	 *
+	 * @param string $key
+	 * @param string $downloadUrl URL where the File could download (Controller with Repository::download())
+	 *               NEEDED for all adapters which have no direct Urlaccess (Local, Ftp, SFTP etc.) -> these throw an exception
+	 *               download_url could also be set throw the repoconfig as param
+	 * @param array $options
+	 *
+	 * @return string Generated URL
+	 * @throws FileNotFound   when key does not exist
+	 * @throws \RuntimeException        Url cannot generated
+	 */
+	public function getUrl($key, $downloadUrl = null, $options = array()) {
+		return $this->getRepositoryFromUri($key)->getUrl($key, $downloadUrl, $options);
+	}
+
+
+	/**
+	 * Sends the Content from File with DownloadHeaders and EXIT
+	 * @param $key
+	 * @param null $downloadFileName if TRUE, forceDownload with filename from $key | string for special DownloadFilename
+	 * @param null $contentType overwrite autodetect contentType
+	 * @throws \Exception if headers already sent
+	 */
+	public function downloadFile($key, $downloadFileName = null, $contentType=null) {
+		$this->getRepositoryFromUri($key)->downloadFile($key, $downloadFileName, $contentType);
+	}
+
+	/**
+	 * Appends the given content on the file
+	 *
+	 * @param string  $key       Key of the file
+	 * @param string  $content   Content to append on the file
+	 *
+	 * @return integer The number of bytes that were written into the file
+	 */
+	public function append($key, $content) {
+		return $this->getRepositoryFromUri($key)->append($key, $content);
 	}
 
 }

@@ -23,14 +23,6 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 	protected $test_content = 'Neque porro quisquam est qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit...';
 	protected $cfg_id;
 
-	protected $fileList = array(
-        'subdir',
-        'subdir/testFile.txt',
-        'testFile.txt',
-        'testImg.png'
-    );
-
-
     public function __construct($name = NULL, array $data = array(), $dataName = '') {
 	    parent::__construct($name, $data, $dataName);
 	    $yml_file = __DIR__ . '/../../../../config/repositories.yml';
@@ -52,6 +44,7 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 		} catch (\Exception $e) {
 			$this->markTestSkipped('RepositoryConfiguration not exists - create ' . $this->cfg_id);
 		}
+		return parent::setUp();
 	}
 
 	/**
@@ -79,7 +72,15 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
             $repo->delete('testImg.png');
         if ($repo->has('subdir/testFile.txt'))
             $repo->delete('subdir/testFile.txt');
-        if ($repo->has('subdir'))
+        if ($repo->has('subdir/testFile1.txt'))
+            $repo->delete('subdir/testFile1.txt');
+        if ($repo->has('subdir/testFile2.txt'))
+            $repo->delete('subdir/testFile2.txt');
+	    if ($repo->has('subdir/subsubdir/testFile1.txt'))
+		    $repo->delete('subdir/subsubdir/testFile1.txt');
+	    if ($repo->has('subdir/subsubdir'))
+            $repo->delete('subdir/subsubdir');
+	    if ($repo->has('subdir'))
             $repo->delete('subdir');
 	}
 
@@ -87,7 +88,7 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
         $local = self::DIR . 'src.txt';
 		file_put_contents($local, $this->test_content);
 		$key = 'trg.txt';
-		$repo->upload($local, $key);
+		$repo->push($local, $key);
 
 		$this->assertTrue($repo->has($key), 'Uploaded File exists');
 		$this->assertEquals($this->test_content, $repo->read($key), 'Uploaded File Content is Equal');
@@ -95,8 +96,8 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 		// Download ExampleImg for BinaryTest
 		$tmpImg = self::DIR .'testImg.png';
 		file_put_contents($tmpImg, file_get_contents('http://www.google.de/images/srpr/logo4w.png'));
-		$repo->upload($tmpImg, 'testImg.png');
-		$repo->download('testImg.png', $tmpImg.'2');
+		$repo->push($tmpImg, 'testImg.png');
+		$repo->pull('testImg.png', $tmpImg.'2');
 		$this->assertFileEquals($tmpImg, $tmpImg . '2', 'Uploaded BinaryFile is Equal');
 		unlink($tmpImg);
 		unlink($tmpImg.'2');
@@ -106,11 +107,11 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 		$local = self::DIR . 'src.txt';
 		file_put_contents($local, $this->test_content);
 		$key = 'trg.txt';
-		$repo->upload($local, $key);
+		$repo->push($local, $key);
 
 		// Overwrite Download
         file_put_contents($local, 'TestOverwrite');
-		$this->assertTrue($repo->upload($local, $key, true), 'ForceUpload with existing file wo Exception');
+		$this->assertTrue($repo->push($local, $key, true), 'ForceUpload with existing file wo Exception');
 		$this->assertEquals('TestOverwrite', $repo->read($key), 'Uploaded File Content ist Equal');
 	}
 
@@ -121,14 +122,14 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
         $repo->write($key, $this->test_content);
 
 		$this->setExpectedException('\Gaufrette\Exception\UnexpectedFile');
-		$repo->upload($local, $key);
+		$repo->push($local, $key);
 	}
 
 	protected function _testUploadFileSourceFileNotExistsException(Repository $repo) {
 		$local = self::DIR . 'src.txt';
 		$key = 'trg.txt';
 		$this->setExpectedException('\Gaufrette\Exception\FileNotFound');
-		$repo->upload($local, $key);
+		$repo->push($local, $key);
 	}
 
 
@@ -136,7 +137,7 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 		$local = self::DIR . 'trg.txt';
 		$key = 'src.txt';
         $repo->write($key, $this->test_content);
-		$repo->download($key, $local);
+		$repo->pull($key, $local);
 
 		$this->assertFileExists($local, 'Downloaded File exists');
 		$this->assertEquals($this->test_content, file_get_contents($local), 'Downloaded File Content ist Equal');
@@ -146,11 +147,11 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 		$local = self::DIR . 'trg.txt';
 		$key = 'src.txt';
         $repo->write($key, $this->test_content);
-		$repo->download($key, $local);
+		$repo->pull($key, $local);
 
 		// Overwrite Download
         $repo->write($key, 'TestOverwrite', true);
-		$this->assertTrue($repo->download($key, $local, true), 'ForceUpload with existing file wo Exception');
+		$this->assertTrue($repo->pull($key, $local, true), 'ForceUpload with existing file wo Exception');
 		$this->assertEquals('TestOverwrite', file_get_contents($local), 'Downloaded File Content ist Equal');
 	}
 
@@ -161,7 +162,7 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 		file_put_contents($local, $this->test_content);
 
 		$this->setExpectedException('\Gaufrette\Exception\UnexpectedFile');
-		$repo->download($key, $local);
+		$repo->pull($key, $local);
 	}
 
 	protected function _testDownloadFileSourceFileNotExistsException(Repository $repo) {
@@ -169,19 +170,134 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 		$key = 'src.txt';
 
 		$this->setExpectedException('\Gaufrette\Exception\FileNotFound');
-		$repo->download($key, $local);
+		$repo->pull($key, $local);
 	}
 
 
-    protected function _testCorrectFileStruture(Repository $repo) {
+    protected function _testCorrectFileStructure(Repository $repo) {
         $this->assertEquals(array(), $repo->keys(), 'directory structure empty');
 
 	    $repo->write('testFile.txt', $this->test_content);
 	    $repo->write('testImg.png', $this->test_content);
-        $repo->write('/subdir/testFile.txt', $this->test_content);
+        $repo->write('subdir/testFile1.txt', $this->test_content);
+	    $repo->write('subdir/testFile2.txt', $this->test_content);
+	    $repo->write('subdir/subsubdir/testFile1.txt', $this->test_content);
 
-	    $ls = $repo->keys();
-	    $this->assertEquals(sort($this->fileList), sort($ls), 'directory structure correct');
+	    $fileList = array(
+		    'subdir/testFile1.txt',
+		    'subdir/testFile2.txt',
+		    'subdir/subsubdir/testFile1.txt',
+		    'testFile.txt',
+		    'testImg.png'
+	    );
+	    sort($fileList);
+	    $ls = $repo->keys(null, false);
+	    sort($ls);
+	    $this->assertEquals($fileList, $ls, 'directory structure correct');
+
+	    $fileListWithPrefix = array(
+			'subdir/subsubdir/testFile1.txt',
+		    'subdir/testFile1.txt',
+		    'subdir/testFile2.txt',
+	    );
+	    sort($fileListWithPrefix);
+
+	    $ls = $repo->keys('subdir', false);
+	    sort($ls);
+	    $this->assertEquals($fileListWithPrefix, $ls, 'directory structure with prefix correct [without slashes]');
+
+	    $ls = $repo->keys('/subdir', false);
+	    sort($ls);
+	    $this->assertEquals($fileListWithPrefix, $ls, 'directory structure with prefix correct [preSlash]');
+
+	    // Check Prefix (show SubdirPrefix)
+	    $fileListWithPrefix = array(
+		    'subsubdir/testFile1.txt',
+		    'testFile1.txt',
+		    'testFile2.txt',
+	    );
+	    sort($fileListWithPrefix);
+
+	    $ls = $repo->keys('subdir/', false);
+	    sort($ls);
+	    $this->assertEquals($fileListWithPrefix, $ls, 'directory structure with prefix correct [postSlash]');
+
+	    $ls = $repo->keys('/subdir/', false);
+	    sort($ls);
+	    $this->assertEquals($fileListWithPrefix, $ls, 'directory structure with prefix correct [bothSlashes]');
+
+    }
+    protected function _testCorrectFileStructureWithDirectories(Repository $repo) {
+        $this->assertEquals(array(), $repo->keys(), 'directory structure empty');
+
+	    $repo->write('testFile.txt', $this->test_content);
+	    $repo->write('testImg.png', $this->test_content);
+        $repo->write('subdir/testFile1.txt', $this->test_content);
+	    $repo->write('subdir/testFile2.txt', $this->test_content);
+	    $repo->write('subdir/subsubdir/testFile1.txt', $this->test_content);
+
+	    // All Files
+	    $fileList = array(
+		    'subdir',
+		    'subdir/testFile1.txt',
+		    'subdir/testFile2.txt',
+		    'subdir/subsubdir',
+		    'subdir/subsubdir/testFile1.txt',
+		    'testFile.txt',
+		    'testImg.png'
+	    );
+	    sort($fileList);
+	    $ls = $repo->keys(null, true);
+	    sort($ls);
+	    $this->assertEquals($fileList, $ls, 'directory structure correct');
+
+
+	    // PrefixFiles
+	    $fileList = array(
+		    'testFile1.txt',
+		    'testFile2.txt',
+	    );
+	    sort($fileList);
+	    $ls = $repo->keys('subdir/test', true);
+	    sort($ls);
+	    $this->assertEquals($fileList, $ls, 'directory structure with prefix (Dir+File) correct');
+
+
+	    // Check Prefix (show SubdirPrefix)
+	    $fileListWithPrefix = array(
+		    'subdir',
+		    'subdir/subsubdir',
+		    'subdir/subsubdir/testFile1.txt',
+		    'subdir/testFile1.txt',
+		    'subdir/testFile2.txt',
+	    );
+	    sort($fileListWithPrefix);
+
+	    $ls = $repo->keys('subdir', true);
+	    sort($ls);
+	    $this->assertEquals($fileListWithPrefix, $ls, 'directory structure with prefix correct [without slashes]');
+
+	    $ls = $repo->keys('/subdir', true);
+	    sort($ls);
+	    $this->assertEquals($fileListWithPrefix, $ls, 'directory structure with prefix correct [preSlash]');
+
+
+	    // Check SubDirPrefix (hidePrefix)
+	    $fileListWithPrefix = array(
+		    'subsubdir',
+		    'subsubdir/testFile1.txt',
+		    'testFile1.txt',
+		    'testFile2.txt',
+	    );
+	    sort($fileListWithPrefix);
+
+	    $ls = $repo->keys('/subdir/', true);
+	    sort($ls);
+	    $this->assertEquals($fileListWithPrefix, $ls, 'directory structure with prefix correct [bothSlashes]');
+
+	    $ls = $repo->keys('subdir/', true);
+	    sort($ls);
+	    $this->assertEquals($fileListWithPrefix, $ls, 'directory structure with prefix correct [postSlash]');
     }
 
     protected function _testDeleteFileSuccessfully(Repository $repo) {
@@ -214,5 +330,59 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
         $repo->getAdapter()->isDirectory('subdir');
         $this->assertTrue($repo->getAdapter()->isDirectory('subdir'), 'check isDirectory');
     }
+
+	protected function _testGetContentType(Repository $repo) {
+		$key = 'src.txt';
+		$repo->write($key, $this->test_content);
+		$this->assertTrue($repo->has($key), 'written File exists');
+		$ct = $repo->contentType($key);
+		// some Adapter (s3) dont check that this is an textFile
+		if ($ct == 'text/plain') {
+			$this->assertEquals('text/plain', $ct, 'Check ContentType TXT');
+		} else {
+			$this->assertEquals('application/octet-stream', $ct, 'Check ContentType TXT (FALLBACK application/octet-stream)');
+		}
+
+		// Download ExampleImg for BinaryTest
+		$key2 = 'testImg.png';
+		$tmpImg = self::DIR . $key2;
+		file_put_contents($tmpImg, file_get_contents('http://www.google.de/images/srpr/logo4w.png'));
+		$repo->push($tmpImg, $key2);
+		$this->assertTrue($repo->has($key2), 'uploaded File exists');
+		$this->assertEquals('image/png', $repo->contentType($key2), 'Check ContentType IMG');
+		unlink($tmpImg);
+	}
+
+	protected function _testGetUrl(Repository $repo) {
+		$key = 'subdir/testfile.txt';
+
+		$repo->write($key, $this->test_content);
+		$this->assertTrue($repo->has($key), 'check file exists');
+
+		$options = array();
+		$baseUrl = 'http://www.downloadtest.de/download/%s';
+
+		$downloadUrl = sprintf($baseUrl, basename($key));
+		$url = sprintf($baseUrl, '{FILENAME}');
+		$this->assertEquals($downloadUrl, $repo->getUrl($key, $url, $options), 'check DownloadUrl {FILENAME}');
+
+		$downloadUrl = sprintf($baseUrl, ltrim(dirname($key), '/'));
+		$url = sprintf($baseUrl, '{PATH}');
+		$this->assertEquals($downloadUrl, $repo->getUrl($key, $url, $options), 'check DownloadUrl {PATH}');
+
+		$downloadUrl = sprintf($baseUrl, ltrim($key, '/'));
+		$url = sprintf($baseUrl, '{FULL_PATH}');
+		$this->assertEquals($downloadUrl, $repo->getUrl($key, $url, $options), 'check DownloadUrl {FULL_PATH}');
+
+		$downloadUrl = sprintf($baseUrl, 'http');
+		$url = sprintf($baseUrl, '{SCHEME}');
+		$this->assertEquals($downloadUrl, $repo->getUrl($key, $url, $options), 'check DownloadUrl {SCHEME}');
+	}
+
+	protected function _testAppending(Repository $repo) {
+		$repo->write('src.txt', $this->test_content);
+		$repo->append('src.txt', $this->test_content);
+		$this->assertEquals($this->test_content. $this->test_content, $repo->read('src.txt'), 'Content Equal');
+	}
 
 }

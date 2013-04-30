@@ -13,7 +13,7 @@ use Gaufrette\Exception\UnexpectedFile;
 use Gaufrette\Adapter;
 use Guzzle\Service\Resource\Model;
 
-class AdapterAmazonS3Ver2 extends AmazonS3 implements AdapterUploadable, AdapterDownloadable, AdapterLinkable, Adapter {
+class AdapterAmazonS3Ver2 extends AmazonS3 implements Adapter, UrlAware {
 
     protected $service;
     protected $bucket;
@@ -32,8 +32,30 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements AdapterUploadable, Adapter
         $this->setDirectory($options['directory']);
     }
 
+	/**
+	 * Returns the created time
+	 *
+	 * @param string $key
+	 *
+	 * @return integer|boolean An UNIX like timestamp or false
+	 */
+	public function ctime($key) {
+		throw new \RuntimeException('Adapter does not support ctime function.');
+	}
 
-    /**
+	/**
+	 * Returns the last accessed time
+	 *
+	 * @param string $key
+	 *
+	 * @return integer|boolean An UNIX like timestamp or false
+	 */
+	public function atime($key) {
+		throw new \RuntimeException('Adapter does not support atime function.');
+	}
+
+
+	/**
 	 * Uploads a Local file
 	 *
 	 * @param string $localFile
@@ -44,7 +66,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements AdapterUploadable, Adapter
 	 * @throws UnexpectedFile when targetKey exists
 	 * @throws \RuntimeException        when cannot rename
 	 */
-	public function upload($localFile, $targetKey) {
+	public function push($localFile, $targetKey) {
 		return $this->write($targetKey, fopen($localFile, 'r'));
 	}
 
@@ -60,7 +82,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements AdapterUploadable, Adapter
 	 * @throws UnexpectedFile when targetKey exists
 	 * @throws \RuntimeException        when cannot rename
 	 */
-	public function download($sourceKey, $localTargetFile) {
+	public function pull($sourceKey, $localTargetFile) {
         try {
             $this->getObject($sourceKey, array(
                 'SaveAs' => $localTargetFile
@@ -76,7 +98,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements AdapterUploadable, Adapter
 	 * Retrieve the S3 object URL for the given key.
 	 *
 	 * @param string $key
-	 * @param integer|string $preauth Look at \AmazonS3::get_object_url() docs
+	 * @param integer|string $validTime seconds or strtotime() string | 0=> endless
 	 * @param array $opt Look at \AmazonS3::get_object_url() docs
 	 *
 	 * @see \AmazonS3::get_object_url()
@@ -84,15 +106,34 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements AdapterUploadable, Adapter
 	 * @return string The S3 object URL
 	 */
 	public function getUrl($key, $validTime = 0, $options = array()) {
-        $url = "{$this->bucket}/{$this->computePath($key)}";
-        if (array_key_exists('filename', $options))
-            $url .= '?response-content-disposition='.urlencode("attachment; filename=\"{$options['filename']}\"");
-        $request = $this->service->get($url);
+		// for CloudFront or static Domain, set download_url in Repositories.yml
+		if (array_key_exists('download_url', $options)) {
+			return $options['download_url'];
+		}
+		$url = "https://{$this->bucket}.s3.amazonaws.com/{$this->computePath($key)}";
 
-        if (is_numeric($validTime))
-            $validTime = '+'.$validTime.' seconds';
+		// Public Access, or Signed URL
+		if (in_array($this->options['default_acl'], array(CannedAcl::PUBLIC_READ, CannedAcl::PUBLIC_READ_WRITE))) {
+			return $url;
+		} else {
+			// Avialable request_options: response-content-type, response-content-language, response-expires, response-cache-control, response-content-disposition, response-content-encoding
+			$request_options = array();
+			if (array_key_exists('filename', $options))
+				$request_options['response-content-disposition'] = "attachment; filename=\"{$options['filename']}\"";
 
-        return $this->service->createPresignedUrl($request, $validTime);
+			$request_options['response-content-type'] = @$options['content_type'] ?: $this->getContentType($key);
+
+	        $url .= "?". http_build_query($request_options);
+
+	        $request = $this->service->get($url);
+
+			if (empty($validTime))
+				$validTime = 2147483647; // End of UnixTime
+	        elseif (is_numeric($validTime))
+	            $validTime = '+'.$validTime.' seconds';
+
+	        return $this->service->createPresignedUrl($request, $validTime);
+		}
 	}
 
 	/**
@@ -159,28 +200,50 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements AdapterUploadable, Adapter
     }
 
     /**
+     * {@inheritDoc}
+     * @return Model
+     */
+	public function getKeyIterator($prefix = null) {
+		$this->ensureBucketExists();
+
+		// add slash to beginning and remove from end
+		$prefix = rtrim(preg_replace('/^[\/]*([^\/].*)[\/]?$/', '/$1', $prefix), '/');
+
+		return $this->service->getIterator('ListObjects', array(
+            'Bucket' => $this->bucket,
+            'Prefix' => $this->getDirectory().$prefix
+        ));
+    }
+
+    /**
      * Add Directory-Prefix and remove fullPath and emptyDirLine from output for similar response to local/ftp etc
      * {@inheritDoc}
      */
-    public function keys() {
-        $this->ensureBucketExists();
+	public function keys($prefix = null, $withDirectories = false) {
+		$this->ensureBucketExists();
 
-        /** @var $list Model */
-        $list = $this->service->getIterator('ListObjects', array(
-            'Bucket' => $this->bucket,
-            'Prefix' => $this->getDirectory()
-        ));
+		// add slash to beginning and remove from end
+		$prefix = preg_replace('/^[\/]*([^\/].*)[\/]?$/', '/$1', $prefix);
+
+		$iterator = $this->getKeyIterator($prefix);
 
         $keys = array();
-        $dirLength = strlen($this->getDirectory())+1; //+1 to remove the starting slash
-        foreach ($list as $file) {
-            $key = $file['Key'];
-            if (strlen(dirname($key)) > $dirLength)
-                $keys[] = substr(dirname($key), $dirLength);
-            elseif (strlen($key) > $dirLength)
-                $keys[] = substr($key, $dirLength);
-        }
-        sort($keys);
+        $paths = array();
+		$prefix_dir = rtrim(substr($prefix, -1) != '/'?dirname($prefix):$prefix, '/');
+		$dirLength = strlen($this->getDirectory() . $prefix_dir) + 1; //+1 to remove the starting slash
+		foreach ($iterator as $item) {
+			$file = substr($item['Key'], $dirLength);
+			if (!$file) continue;
+			$dir = dirname($file);
+			// Directory
+			if (strlen($dir) > 0 && $dir != '.')
+				$paths[$dir] = true;
+			// File
+			$keys[] = $file;
+		}
+		if ($withDirectories)
+			$keys = array_merge(array_keys($paths), $keys);
+		sort($keys);
 
         return $keys;
     }
@@ -194,7 +257,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements AdapterUploadable, Adapter
         $this->ensureBucketExists();
 
         $options = array_replace_recursive(
-            array('acl' => $this->options['default_acl']),
+            array('ACL' => $this->options['default_acl']),
             $this->getMetadata($key),
             array(
                 'Body' => $content,
@@ -291,7 +354,8 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements AdapterUploadable, Adapter
      */
     public function mtime($key) {
         $this->ensureBucketExists();
-        return strtotime($this->getObject($key)['LastModified']);
+	    $obj = $this->getObject($key);
+        return strtotime($obj['LastModified']);
     }
 
 
@@ -338,5 +402,22 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements AdapterUploadable, Adapter
         ));
         return $this->service->getObject($options);
     }
+
+	/**
+	 * Returns the MimeType of the given Key
+	 * @param $key
+	 * @return mixed
+	 */
+	public function getContentType($key) {
+		$obj = $this->getObject($key);
+		return $obj['ContentType'];
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function append($key, $content) {
+		return $this->write($key, $this->read($key).$content);
+	}
 
 }

@@ -12,7 +12,7 @@ bnrepo-test-s3-DISABLED:
   create: true
   use_old_version: false
   options:
-    default_acl: public-read #DEFAULT is only BucketOwner can read, so everyone with the link can read
+    default_acl: public-read #bucket-owner-full-control[DEFAULT]|private|public-read|public-read-write|authenticated-read|bucket-owner-read
 
 bnrepo-test-ftp-DISABLED:
   type: ftp
