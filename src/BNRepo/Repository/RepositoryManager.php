@@ -46,7 +46,6 @@ class RepositoryManager {
 		}
 
 		try {
-			Yaml::enablePhpParsing();
 			$config = Yaml::parse($resource);
 		} catch (ParseException $e) {
 			throw new InvalidResourceException('Error parsing YAML.', 0, $e);

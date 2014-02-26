@@ -340,7 +340,10 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 		if ($ct == 'text/plain') {
 			$this->assertEquals('text/plain', $ct, 'Check ContentType TXT');
 		} else {
-			$this->assertEquals('application/octet-stream', $ct, 'Check ContentType TXT (FALLBACK application/octet-stream)');
+			if ($ct == 'binary/octet-stream')
+				$this->assertEquals('binary/octet-stream', $ct, 'Check ContentType TXT (FALLBACK binary/octet-stream)');
+			else
+				$this->assertEquals('application/octet-stream', $ct, 'Check ContentType TXT (FALLBACK application/octet-stream)');
 		}
 
 		// Download ExampleImg for BinaryTest
