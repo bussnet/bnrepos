@@ -10,10 +10,10 @@ use Aws\S3\S3Client;
 use Gaufrette\Adapter\AmazonS3;
 use Gaufrette\Exception\FileNotFound;
 use Gaufrette\Exception\UnexpectedFile;
-use Gaufrette\Adapter;
+use Gaufrette\Adapter as GaufretteAdapter;
 use Guzzle\Service\Resource\Model;
 
-class AdapterAmazonS3Ver2 extends AmazonS3 implements Adapter, UrlAware {
+class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware {
 
     protected $service;
     protected $bucket;
