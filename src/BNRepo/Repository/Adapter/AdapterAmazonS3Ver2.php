@@ -108,7 +108,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
 	public function getUrl($key, $validTime = 0, $options = array()) {
 		// for CloudFront or static Domain, set download_url in Repositories.yml
 		if (array_key_exists('download_url', $options)) {
-			return $options['download_url'];
+			return sprintf($options['download_url'], $key);
 		}
 		$url = "https://{$this->bucket}.s3.amazonaws.com/{$this->computePath($key)}";
 

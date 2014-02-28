@@ -3,6 +3,11 @@ bnrepo-test-local:
   dir: /tmp/bnrepo-test
   create: true
 
+bnrepo-test-local-url-aware:
+  type: localUrlAware
+  dir: /tmp/bnrepo-test
+  create: true
+
 bnrepo-test-s3-DISABLED:
   type: s3
   aws_key: AWS_KEY
