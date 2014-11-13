@@ -3,9 +3,9 @@ bnrepo-test-local:
   dir: /tmp/bnrepo-test
   create: true
 
-bnrepo-test-local-url-aware:
-  type: localUrlAware
-  dir: /tmp/bnrepo-test
+bnrepo-test-local-2:
+  type: local
+  dir: /tmp/bnrepo-test2
   create: true
 
 bnrepo-test-s3-DISABLED:
