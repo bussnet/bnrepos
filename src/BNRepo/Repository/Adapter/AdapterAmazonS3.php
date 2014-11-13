@@ -172,9 +172,9 @@ class AdapterAmazonS3 extends AmazonS3 implements Adapter {
     /**
      * Add Directory-Prefix and remove fullPath and emptyDirLine from output for similar response to local/ftp etc
      * {@inheritDoc}
-     * @deprecated
+     * @deprecated not fully compatible result @todo
      */
-    public function keys($prefix=null, $withDirectories=false) {
+    public function keysWithPrefix($prefix, $withDirectories=false) {
 	    //@todo: implement $prefix and $withDirectories
         $this->ensureBucketExists();
 

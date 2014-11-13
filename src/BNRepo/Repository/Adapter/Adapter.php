@@ -43,9 +43,10 @@ interface Adapter extends \Gaufrette\Adapter {
 	 * Returns an array of all keys (files and directories)
 	 *
 	 * @param null $prefix
+	 * @param null $withDirectories show directories?
 	 * @return array
 	 */
-	public function keys($prefix=null, $withDirectories=false);
+	public function keysWithPrefix($prefix, $withDirectories=false);
 
 	/**
 	 * Returns the MimeType of the given Key

@@ -17,11 +17,13 @@ class RepositoryManager {
 
 	/**
 	 * @param $id
+	 * @param bool $force_create creat repo, even if is cached
 	 * @return Repository
 	 * @throws RepositoryNotFoundException
+	 * @throws RepositoryTypeNotFoundException
 	 */
-	public static function getRepository($id) {
-		if (!array_key_exists($id, self::$repositories)) {
+	public static function getRepository($id, $force_create = false) {
+		if (!array_key_exists($id, self::$repositories) || $force_create) {
             if (!array_key_exists($id, self::$config))
 				throw new RepositoryNotFoundException();
 			$cfg = self::$config[$id];
@@ -67,23 +69,27 @@ class RepositoryManager {
 
 	/**
 	 * @param $repositories array with repositoryConfigs
+	 * @param bool $overwrite_existing_config
 	 */
-	public static function addRepositories($repositories) {
+	public static function addRepositories($repositories, $overwrite_existing_config = false) {
 		foreach ($repositories as $id => $repository) {
             // ID entweder als Key in der Liste, oder als parameter "id"
             if (isset($repository['id']))
                 $id = $repository['id'];
             else
                 $repository['id'] = $id;
+			if (isset(self::$config[$id]) && !$overwrite_existing_config)
+				throw new RepositoryAlreadyExistsException('Repository with id '.$id.' already exists - use force param to overwrite');
             self::$config[$id] = $repository;
 		}
 	}
 
 	/**
 	 * @param $cfg Repository Config
+	 * @param bool $overwrite_existing_config
 	 */
-	public static function addRepository($cfg) {
-		self::addRepositories(array($cfg));
+	public static function addRepository($cfg, $overwrite_existing_config = false) {
+		self::addRepositories(array($cfg), $overwrite_existing_config);
 	}
 
 	/**
@@ -116,8 +122,10 @@ class RepositoryManager {
 	}
 }
 
-class InvalidResourceException extends \Exception {}
-class NotFoundResourceException extends \Exception {}
-class RepositoryNotFoundException extends \Exception {}
-class RepositoryTypeNotFoundException extends \Exception {}
-class ParamNotFoundException extends \Exception {}
+class BnRepoException extends \Exception {}
+class InvalidResourceException extends BnRepoException {}
+class NotFoundResourceException extends BnRepoException {}
+class RepositoryNotFoundException extends BnRepoException {}
+class RepositoryAlreadyExistsException extends BnRepoException {}
+class RepositoryTypeNotFoundException extends BnRepoException {}
+class ParamNotFoundException extends BnRepoException {}

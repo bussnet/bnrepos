@@ -86,7 +86,7 @@ class AdapterSftp extends Sftp implements Adapter {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function keys($prefix=null, $withDirectories=false) {
+	public function keysWithPrefix($prefix, $withDirectories=false) {
 		$this->initialize();
 
 		$path = $prefix;

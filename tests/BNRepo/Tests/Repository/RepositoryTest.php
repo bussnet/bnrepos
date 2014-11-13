@@ -8,6 +8,7 @@
 namespace BNRepo\Tests\Repository;
 
 
+use BNRepo\Repository\Adapter\UrlAware;
 use BNRepo\Repository\Repository;
 use BNRepo\Repository\RepositoryManager;
 use Symfony\Component\Yaml\Yaml;
@@ -24,6 +25,7 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 	protected $cfg_id;
 
     public function __construct($name = NULL, array $data = array(), $dataName = '') {
+	    RepositoryManager::reset();
 	    parent::__construct($name, $data, $dataName);
 	    $yml_file = __DIR__ . '/../../../../config/repositories.yml';
 	    if (isset($_ENV['repositories']))
@@ -51,7 +53,7 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
      * @return Repository
      */
     protected function repo() {
-	    return RepositoryManager::getRepository($this->cfg_id);
+	    return RepositoryManager::getRepository($this->cfg_id, true);
     }
 
     protected function tearDown() {
@@ -68,6 +70,8 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 
         if ($repo->has('testFile.txt'))
             $repo->delete('testFile.txt');
+        if ($repo->has('public.txt'))
+            $repo->delete('public.txt');
         if ($repo->has('testImg.png'))
             $repo->delete('testImg.png');
         if ($repo->has('subdir/testFile.txt'))
@@ -357,29 +361,52 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 	}
 
 	protected function _testGetUrl(Repository $repo) {
-		$key = 'subdir/testfile.txt';
+		$key = 'subdir/testFile.txt';
 
 		$repo->write($key, $this->test_content);
 		$this->assertTrue($repo->has($key), 'check file exists');
 
 		$options = array();
-		$baseUrl = 'http://www.downloadtest.de/download/%s';
+		if (!$repo->getAdapter() instanceof UrlAware) {
+			$baseUrl = 'Test_%s_Test';
 
-		$downloadUrl = sprintf($baseUrl, basename($key));
-		$url = sprintf($baseUrl, '{FILENAME}');
-		$this->assertEquals($downloadUrl, $repo->getUrl($key, $url, $options), 'check DownloadUrl {FILENAME}');
+			// test url building
+			$downloadUrl = sprintf($baseUrl, basename($key));
+			$url = sprintf($baseUrl, '{FILENAME}');
+			$this->assertEquals($downloadUrl, $repo->getUrl($key, $url, $options), 'check DownloadUrl {FILENAME}');
 
-		$downloadUrl = sprintf($baseUrl, ltrim(dirname($key), '/'));
-		$url = sprintf($baseUrl, '{PATH}');
-		$this->assertEquals($downloadUrl, $repo->getUrl($key, $url, $options), 'check DownloadUrl {PATH}');
+			$downloadUrl = sprintf($baseUrl, ltrim(dirname($key), '/'));
+			$url = sprintf($baseUrl, '{PATH}');
+			$this->assertEquals($downloadUrl, $repo->getUrl($key, $url, $options), 'check DownloadUrl {PATH}');
 
-		$downloadUrl = sprintf($baseUrl, ltrim($key, '/'));
-		$url = sprintf($baseUrl, '{FULL_PATH}');
-		$this->assertEquals($downloadUrl, $repo->getUrl($key, $url, $options), 'check DownloadUrl {FULL_PATH}');
+			$downloadUrl = sprintf($baseUrl, ltrim($key, '/'));
+			$url = sprintf($baseUrl, '{FULL_PATH}');
+			$this->assertEquals($downloadUrl, $repo->getUrl($key, $url, $options), 'check DownloadUrl {FULL_PATH}');
 
-		$downloadUrl = sprintf($baseUrl, 'http');
-		$url = sprintf($baseUrl, '{SCHEME}');
-		$this->assertEquals($downloadUrl, $repo->getUrl($key, $url, $options), 'check DownloadUrl {SCHEME}');
+			$downloadUrl = sprintf($baseUrl, 'http');
+			$url = sprintf($baseUrl, '{SCHEME}');
+			$this->assertEquals($downloadUrl, $repo->getUrl($key, $url, $options), 'check DownloadUrl {SCHEME}');
+
+			if ($repo->getConfig('download_url')) {
+				$baseUrl = $repo->getConfig('download_url');
+				// download file
+				$local = self::DIR . 'trg.txt';
+				$url = $repo->getUrl($key, $baseUrl);
+				file_put_contents($local, file_get_contents($url));
+
+				$this->assertFileExists($local, 'Downloaded File exists');
+				$this->assertEquals($this->test_content, file_get_contents($local), 'Downloaded File Content ist Equal');
+			}
+
+		} else {
+			$local = self::DIR . 'trg.txt';
+			$url = $repo->getUrl($key);
+			file_put_contents($local, file_get_contents($url));
+
+			$this->assertFileExists($local, 'Downloaded File exists');
+			$this->assertEquals($this->test_content, file_get_contents($local), 'Downloaded File Content ist Equal');
+		}
+
 	}
 
 	protected function _testAppending(Repository $repo) {

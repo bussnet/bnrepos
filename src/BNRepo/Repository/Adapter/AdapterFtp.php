@@ -97,7 +97,7 @@ class AdapterFtp extends Ftp implements Adapter {
 	 * Add Directory-Prefix and remove fullPath and emptyDirLine from output for similar response to local/ftp etc
 	 * {@inheritDoc}
 	 */
-	public function keys($prefix = null, $withDirectories = false) {
+	public function keysWithPrefix($prefix, $withDirectories = false) {
 		return $this->fetchKeys($prefix, $withDirectories);
 	}
 

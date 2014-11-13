@@ -90,7 +90,7 @@ class AdapterLocal extends Local implements Adapter {
 	/**
 	 * {@inheritDoc}
 	 */
-	public function keys($prefix=null, $withDirectories=false) {
+	public function keysWithPrefix($prefix, $withDirectories=false) {
 
 		$path = $prefix;
 		if (substr($path, -1) != '/') {

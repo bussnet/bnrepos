@@ -21,6 +21,11 @@ class Repository extends Filesystem {
 	 */
 	protected $adapter;
 
+	/**
+	 * @var array settings of the adapter
+	 */
+	protected $config;
+
 
 	public function __construct($cfg) {
 		$this->config = $cfg;
@@ -162,7 +167,7 @@ class Repository extends Filesystem {
 	 * @return array
 	 */
 	public function keys($prefix = null, $withDirectories = false) {
-		return $this->adapter->keys($prefix, $withDirectories);
+		return $this->adapter->keysWithPrefix($prefix, $withDirectories);
 	}
 
 	/**
@@ -201,7 +206,7 @@ class Repository extends Filesystem {
 				$options['filename'] = $downloadFileName;
 			if ($contentType !== null)
 				$options['content_type'] = $contentType;
-			$url = $this->adapter->getUrl($key, null, $options);
+			$url = $this->getUrl($key, null, $options);
 			header('Location: ' . $url);
 		} else {
 			$file = $this->get($key, false);
@@ -258,7 +263,7 @@ class Repository extends Filesystem {
 		if (empty($url) && isset($this->config['download_url']))
 			$url  = $this->config['download_url'];
 		if (empty($url))
-			throw new \RuntimeException('adapter dont support UrlAware - $downlodUrl needed');
+			throw new \RuntimeException('adapter dont support UrlAware - $download_url needed');
 		$url = str_replace('{FULL_PATH}', ltrim($key, '/'), $url);
 		$url = str_replace('{PATH}', ltrim(dirname($key), '/'), $url);
 		$url = str_replace('{FILENAME}', basename($key), $url);
@@ -312,5 +317,12 @@ class Repository extends Filesystem {
 		return $numBytes;
 	}
 
+	/**
+	 * return the adapter settings
+	 * @return mixed
+	 */
+	public function getConfig($key = null, $default = null) {
+		return empty($key) ? $this->config : (@$this->config[$key] ?: $default);
+	}
 
 }

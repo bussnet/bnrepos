@@ -219,7 +219,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
      * Add Directory-Prefix and remove fullPath and emptyDirLine from output for similar response to local/ftp etc
      * {@inheritDoc}
      */
-	public function keys($prefix = null, $withDirectories = false) {
+	public function keysWithPrefix($prefix = null, $withDirectories = false) {
 		$this->ensureBucketExists();
 
 		// add slash to beginning and remove from end
