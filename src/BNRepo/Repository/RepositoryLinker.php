@@ -164,14 +164,15 @@ class RepositoryLinker {
 	 *
 	 * @param string $sourceKey
 	 * @param string $targetKey
+	 * @param boolean $overwrite Whether to overwrite the file if exists
 	 *
 	 * @return boolean                  TRUE if the copy was successful
 	 * @throws FileNotFound   when sourceKey does not exist
 	 * @throws UnexpectedFile when targetKey exists
 	 * @throws \RuntimeException        when cannot copy
 	 */
-	public function copy($sourceKey, $targetKey) {
-		return $this->write($targetKey, $this->read($sourceKey)) !== false;
+	public function copy($sourceKey, $targetKey, $overwrite = false) {
+		return $this->write($targetKey, $this->read($sourceKey), $overwrite) !== false;
 	}
 
 	/**
