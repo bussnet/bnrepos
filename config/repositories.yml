@@ -10,6 +10,7 @@ bnrepo-test-local-2:
 
 bnrepo-test-s3-DISABLED:
   type: s3
+  aws_region: AWS_REGION
   aws_key: AWS_KEY
   aws_secret: AWS_SECRET
   bucket: bnrepo-test

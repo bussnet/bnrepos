@@ -6,9 +6,9 @@
 	"license": "MIT",
 	"require": {
         "php": ">=5.3.8",
-	    "aws/aws-sdk-php": "~2.5",
+	    "aws/aws-sdk-php": "~3",
 	    "symfony/yaml": "<2.3",
-	    "herzult/php-ssh": "@dev",
+	    "herzult/php-ssh": "~1.1",
 	    "knplabs/gaufrette": "~0.1"
     },
     "require-dev": {

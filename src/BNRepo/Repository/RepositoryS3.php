@@ -12,6 +12,8 @@ class RepositoryS3 extends Repository {
 	protected function createAdapter($cfg) {
 		if (!isset($cfg['aws_key']) || empty($cfg['aws_key']))
 			throw new ParamNotFoundException('param aws_key in S3-repo not set');
+		if (!isset($cfg['aws_region']) || empty($cfg['aws_region']))
+			throw new ParamNotFoundException('param aws_region in S3-repo not set');
 		if (!isset($cfg['aws_secret']) || empty($cfg['aws_secret']))
 			throw new ParamNotFoundException('param aws_secret in S3-repo not set');
 		if (!isset($cfg['bucket']) || empty($cfg['bucket']))
@@ -19,8 +21,12 @@ class RepositoryS3 extends Repository {
 
 		// OPtions für AmazonClient
 		$aws_options = array(
-			'key' => $cfg['aws_key'],
-			'secret' => $cfg['aws_secret']
+			'credentials' => [
+				'key' => $cfg['aws_key'],
+				'secret' => $cfg['aws_secret'],
+			],
+			'version' => @$cfg['aws_version'] ?: 'latest',
+			'region' => $cfg['aws_region'],
 		);
         if (isset($cfg['aws_options']) && is_array($cfg['aws_options']))
 			$aws_options = array_merge($cfg['aws_options'], $aws_options);
@@ -35,7 +41,8 @@ class RepositoryS3 extends Repository {
 			$fs_options['region'] = $cfg['region'];
 		elseif (isset($cfg['host']) && !empty($cfg['host']))
 			$fs_options['region'] = $cfg['host'];
-
+		if (empty($fs_options['region']))
+			$fs_options['region'] = $aws_options['region'];
 		// if new SDK not exists, switch automatically to old one
 		if (!class_exists('\Aws\S3\S3Client'))
 			$cfg['use_old_version'] = true;
@@ -45,7 +52,7 @@ class RepositoryS3 extends Repository {
 			$service = new \AmazonS3($aws_options);
 			return new AdapterAmazonS3($service, $cfg['bucket'], $fs_options);
 		} else {
-			$service = S3Client::factory($aws_options);
+			$service = new S3Client($aws_options);
 			return new AdapterAmazonS3Ver2($service, $cfg['bucket'], $fs_options);
 		}
 	}

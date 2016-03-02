@@ -3,14 +3,13 @@
 namespace BNRepo\Tests\Repository;
 
 
-use BNRepo\Repository\RepositoryManager;
 use BNRepo\Repository\RepositoryS3;
 
 class RepositoryAmazonS3Test extends RepositoryTest {
 
 	protected $cfg_id = 'bnrepo-test-s3';
 
-    protected function tearDown() {
+	protected function tearDown() {
         parent::tearDown();
 	    if ($this->repo()->has('public.txt'))
 	        $this->repo()->delete('public.txt');
@@ -81,7 +80,16 @@ class RepositoryAmazonS3Test extends RepositoryTest {
 	}
 
 	public function testGetUrl() {
-		$this->_testGetUrl($this->repo());
+		// test repo (public access)
+		$repo = $this->repo();
+		$this->_testGetUrl($repo);
+
+		// test same repo (private access)
+		$cfg = $repo->getConfig();
+		$cfg['options']['default_acl'] = 'private';
+		$cls = get_class($repo);
+		$repo_private = new $cls($cfg);
+		$this->_testGetUrl($repo_private);
 	}
 
 	public function testGetPublicUrl() {

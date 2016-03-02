@@ -363,6 +363,9 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 	protected function _testGetUrl(Repository $repo) {
 		$key = 'subdir/testFile.txt';
 
+		if ($repo->has($key))
+			$repo->delete($key);
+
 		$repo->write($key, $this->test_content);
 		$this->assertTrue($repo->has($key), 'check file exists');
 

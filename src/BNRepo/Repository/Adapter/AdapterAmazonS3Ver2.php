@@ -3,18 +3,18 @@
 namespace BNRepo\Repository\Adapter;
 
 
-use Aws\CloudFront\Exception\Exception;
-use Aws\Common\Enum\Region;
-use Aws\S3\Enum\CannedAcl;
 use Aws\S3\S3Client;
 use Gaufrette\Adapter\AmazonS3;
 use Gaufrette\Exception\FileNotFound;
 use Gaufrette\Exception\UnexpectedFile;
 use Gaufrette\Adapter as GaufretteAdapter;
-use Guzzle\Service\Resource\Model;
+use Aws\Result;
 
 class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware {
 
+	/**
+	 * @var S3Client
+	 */
     protected $service;
     protected $bucket;
     protected $ensureBucket = false;
@@ -25,7 +25,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
         $this->service = $service;
         $this->bucket = $bucket;
         $this->options = array_replace_recursive(
-            array('directory' => '', 'create' => false, 'region' => Region::EU_WEST_1, 'default_acl' => CannedAcl::BUCKET_OWNER_FULL_CONTROL),
+            array('directory' => '', 'create' => false, 'default_acl' => 'bucket-owner-full-control'),
             $options
         );
         // Set Directory Explicit, cause validation/correction rules
@@ -110,29 +110,26 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
 		if (array_key_exists('download_url', $options)) {
 			return sprintf($options['download_url'], $key);
 		}
-		$url = "https://{$this->bucket}.s3.amazonaws.com/{$this->computePath($key)}";
 
 		// Public Access, or Signed URL
-		if (in_array($this->options['default_acl'], array(CannedAcl::PUBLIC_READ, CannedAcl::PUBLIC_READ_WRITE))) {
-			return $url;
+		if (in_array($this->options['default_acl'], array('public-read', 'public-read-write'))) {
+			return $this->service->getObjectUrl($this->bucket, $this->computePath($key));
 		} else {
-			// Avialable request_options: response-content-type, response-content-language, response-expires, response-cache-control, response-content-disposition, response-content-encoding
-			$request_options = array();
-			if (array_key_exists('filename', $options))
-				$request_options['response-content-disposition'] = "attachment; filename=\"{$options['filename']}\"";
 
-			$request_options['response-content-type'] = @$options['content_type'] ?: $this->getContentType($key);
-
-	        $url .= "?". http_build_query($request_options);
-
-	        $request = $this->service->get($url);
+			$cmd = $this->service->getCommand('GetObject', [
+				'Bucket' => $this->bucket,
+				'Key' => $this->computePath($key)
+			]);
 
 			if (empty($validTime))
-				$validTime = 2147483647; // End of UnixTime
-	        elseif (is_numeric($validTime))
-	            $validTime = '+'.$validTime.' seconds';
+				$validTime = '+ 1 week'; // max expire time
+			elseif (is_numeric($validTime))
+				$validTime = '+' . $validTime . ' seconds';
 
-	        return $this->service->createPresignedUrl($request, $validTime);
+			$request = $this->service->createPresignedRequest($cmd, $validTime);
+
+			// Get the actual presigned-url
+			return (string)$request->getUri();
 		}
 	}
 
@@ -166,10 +163,6 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
             return;
         }
 
-        if (isset($this->options['region'])) {
-            $this->service->setRegion($this->options['region']);
-        }
-
         if ($this->service->doesBucketExist($this->bucket)) {
             $this->ensureBucket = true;
             return;
@@ -183,11 +176,13 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
         }
 
         try {
-            /** @var $result Model */
+            /** @var $result Result */
             $result = $this->service->createBucket(array(
                 'Bucket' => $this->bucket,
                 'ACL' => $this->options['default_acl'],
-                'LocationConstraint' => $this->options['region']
+	            'CreateBucketConfiguration' => [
+                    'LocationConstraint' => $this->options['region']
+	            ]
             ));
         } catch (\Exception $e) {
             throw new \RuntimeException(sprintf(
@@ -201,7 +196,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
 
     /**
      * {@inheritDoc}
-     * @return Model
+     * @return Result
      */
 	public function getKeyIterator($prefix = null) {
 		$this->ensureBucketExists();
@@ -267,9 +262,9 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
         );
 
         try {
-            /** @var $response Model */
+            /** @var $response Result */
             $response = $this->service->putObject($options);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return false;
         }
 
@@ -306,7 +301,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
         $this->ensureBucketExists();
 
         try {
-            /** @var $response Model */
+            /** @var $response Result */
             $response = $this->getObject($key);
         } catch (\Exception $e) {
             return false;
@@ -322,7 +317,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
         $this->ensureBucketExists();
 
         try {
-            /** @var $response Model */
+            /** @var $response Result */
             $response = $this->service->copyObject(array(
                 'Bucket' => $this->bucket,
                 'Key' => $this->computePath($targetKey),
@@ -366,7 +361,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
         $this->ensureBucketExists();
 
         try {
-            /** @var $response Model */
+            /** @var $response Result */
             $response = $this->service->deleteObject(array(
                 'Bucket' => $this->bucket,
                 'Key' => $this->computePath($key)
@@ -393,7 +388,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
     /**
      * @param $key
      * @param array $options
-     * @return Model
+     * @return Result
      */
     public function getObject($key, $options=array()) {
         $options = array_merge($options, array(

@@ -241,7 +241,7 @@ class Repository extends Filesystem {
 	 */
 	public function getUrl($key, $downloadUrl = null, $options = array()) {
 		if ($this->adapter instanceof UrlAware) {
-			if (array_key_exists('download_url', $this->config))
+			if (array_key_exists('download_url', $this->config) && !isset($options['download_url']))
 				$options['download_url'] = $this->generateDownloadUrl($key, $this->config['download_url']);
 			$downloadUrl = $this->adapter->getUrl($key,$downloadUrl, $options);
 		}
