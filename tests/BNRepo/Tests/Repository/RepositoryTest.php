@@ -230,6 +230,15 @@ class RepositoryTest extends \PHPUnit_Framework_TestCase {
 	    sort($ls);
 	    $this->assertEquals($fileListWithPrefix, $ls, 'directory structure with prefix correct [bothSlashes]');
 
+	    // Check Prefix (show SubdirPrefix)
+	    $fileListWithPrefix = array(
+		    'testFile1.txt',
+	    );
+
+	    $ls = $repo->keys('/subdir/subsubdir/', false);
+	    sort($ls);
+	    $this->assertEquals($fileListWithPrefix, $ls, 'directory structure with deep prefix correct');
+
     }
     protected function _testCorrectFileStructureWithDirectories(Repository $repo) {
         $this->assertEquals(array(), $repo->keys(), 'directory structure empty');

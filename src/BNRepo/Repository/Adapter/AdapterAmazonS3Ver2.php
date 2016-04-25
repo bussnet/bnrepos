@@ -202,7 +202,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
 		$this->ensureBucketExists();
 
 		// add slash to beginning and remove from end
-		$prefix = rtrim(preg_replace('/^[\/]*([^\/].*)[\/]?$/', '/$1', $prefix), '/');
+		$prefix = rtrim(preg_replace('/^[\/]*([^\/].*)[\/]?$/', '$1', $prefix), '/');
 
 		return $this->service->getIterator('ListObjects', array(
             'Bucket' => $this->bucket,
@@ -225,7 +225,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
         $keys = array();
         $paths = array();
 		$prefix_dir = rtrim(substr($prefix, -1) != '/'?dirname($prefix):$prefix, '/');
-		$dirLength = strlen($this->getDirectory() . $prefix_dir) + 1; //+1 to remove the starting slash
+		$dirLength = ltrim(strlen($this->getDirectory() . $prefix_dir), '/'); // remove the starting slash
 		foreach ($iterator as $item) {
 			$file = substr($item['Key'], $dirLength);
 			if (!$file) continue;
