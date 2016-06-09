@@ -218,14 +218,16 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
 		$this->ensureBucketExists();
 
 		// add slash to beginning and remove from end
-		$prefix = preg_replace('/^[\/]*([^\/].*)[\/]?$/', '/$1', $prefix);
+		$prefix = preg_replace('/^[\/]*([^\/].*)[\/]?$/', '$1', $prefix);
 
 		$iterator = $this->getKeyIterator($prefix);
 
         $keys = array();
         $paths = array();
 		$prefix_dir = rtrim(substr($prefix, -1) != '/'?dirname($prefix):$prefix, '/');
-		$dirLength = ltrim(strlen($this->getDirectory() . $prefix_dir), '/'); // remove the starting slash
+		if ($prefix_dir == '.')
+			$prefix_dir = '';
+		$dirLength = strlen(trim($this->getDirectory() . $prefix_dir, '/')); // remove the starting slash
 		foreach ($iterator as $item) {
 			$file = substr($item['Key'], $dirLength);
 			if (!$file) continue;

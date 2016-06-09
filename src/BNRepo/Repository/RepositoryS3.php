@@ -9,6 +9,11 @@ use BNRepo\Repository\Adapter\AdapterAmazonS3Ver2;
 
 class RepositoryS3 extends Repository {
 
+	/**
+	 * the version of the API which should be used
+	 */
+	const AWS_S3_API_VERSION = '2006-03-01';
+
 	protected function createAdapter($cfg) {
 		if (!isset($cfg['aws_key']) || empty($cfg['aws_key']))
 			throw new ParamNotFoundException('param aws_key in S3-repo not set');
@@ -25,7 +30,7 @@ class RepositoryS3 extends Repository {
 				'key' => $cfg['aws_key'],
 				'secret' => $cfg['aws_secret'],
 			],
-			'version' => @$cfg['aws_version'] ?: 'latest',
+			'version' => self::AWS_S3_API_VERSION,
 			'region' => $cfg['aws_region'],
 		);
         if (isset($cfg['aws_options']) && is_array($cfg['aws_options']))
