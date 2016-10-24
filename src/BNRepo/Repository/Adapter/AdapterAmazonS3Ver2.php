@@ -122,7 +122,7 @@ class AdapterAmazonS3Ver2 extends AmazonS3 implements GaufretteAdapter, UrlAware
 			]);
 
 			if (empty($validTime))
-				$validTime = '+ 1 week'; // max expire time
+				$validTime = '+ 6 days'; // max expire time
 			elseif (is_numeric($validTime))
 				$validTime = '+' . $validTime . ' seconds';
 
